@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paint</title>
+    <style>
+        h1{background-color: black; color: white; text-align: center;}
+        #container{text-align: center;}
+    </style>
+</head>
+<body>
+    <h1>PAINT SOCKET</h1>
+    <div>
+      <label for="selection">Escoge lo que quieres dibujar</label>
+      <select name="selection" id="selection">
+        <option value="1">Punto</option>
+        <option value="2">Linea</option>
+        <option value="3">Arco</option>
+      </select>
+    </div>
+    <div id="container">
+        <canvas id="myCanvas" width="1000" height="600" style="border:1px solid #000000"></canvas>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        let canvas = document.getElementById('myCanvas')
+        let ctx = canvas.getContext('2d')
+        let linea = 0;
+        let arraylinea = [];
+        let arco = 0;
+        let arrayarco=[];
+  
+        canvas.addEventListener('click', function(e) {
+          let selection = document.getElementById('selection').value
+          if(selection == 1){
+            let x = e.offsetX
+            let y = e.offsetY
+            let array = [x,y]
+            socket.emit('punto', array)
+          }
+          if(selection == 2){
+            if(linea == 0){
+              let x = e.offsetX
+              let y = e.offsetY
+              arraylinea = [x,y]
+              linea = 1;
+            }else{
+              let x2 = e.offsetX
+              let y2 = e.offsetY
+              arraylinea.push(x2)
+              arraylinea.push(y2)
+              socket.emit('linea', arraylinea)
+              linea = 0;
+            }
+          }
+          if(selection == 3){
+            if(arco == 0){
+              let x = e.offsetX
+              let y = e.offsetY
+              arrayarco = [x,y]
+              arco = 1;
+            }else{
+              let x2 = e.offsetX
+              let y2 = e.offsetY
+              arrayarco.push(x2)
+              arrayarco.push(y2)
+              socket.emit('arco', arrayarco)
+              arco = 0;
+            }
+          }          
+        })
+
+        socket.on('punto', function (cords) {
+          ctx.beginPath()
+          ctx.arc(cords[0], cords[1], 5, 0, 2*Math.PI, false)
+          ctx.closePath()
+          ctx.fillStyle = 'black'
+          ctx.fill()
+        })
+
+        socket.on('linea', function(cords){
+          if (linea == 0) 
+          ctx.beginPath()
+          ctx.moveTo(cords[0],cords[1]);
+          ctx.lineTo(cords[2],cords[3]);
+          ctx.closePath()
+          ctx.strokeStyle = 'black'
+          ctx.stroke()
+        })
+
+        socket.on('arco', function(cords){
+          ctx.beginPath()
+          let mida = Math.sqrt((cords[0]-cords[2])*(cords[0]-cords[2])+((cords[1]-cords[3])*(cords[1]-cords[3])))
+          ctx.moveTo(cords[0],cords[1]);
+          ctx.quadraticCurveTo((cords[0]+mida/2),(cords[1]-mida/2),cords[2],cords[3])
+          ctx.strokeStyle = 'black'
+          ctx.stroke()
+        })
+  
+      </script>
+</body>
+</html>
